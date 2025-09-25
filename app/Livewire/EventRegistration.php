@@ -3,6 +3,7 @@
 namespace App\Livewire;
 
 use App\Models\Event;
+use App\Models\Registration;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -35,7 +36,7 @@ class EventRegistration extends Component
         $this->participants = array_values($this->participants);
     }
 
-    /*protected function rules()
+    protected function rules()
     {
         return [
             'selectedEvent' => 'required|exists:events,id',
@@ -59,7 +60,49 @@ class EventRegistration extends Component
                 }
             ],
         ];
-    }*/
+    }
+    
+     public function submit()
+    {
+        $this->validate();
+
+      //  DB::transaction(function () {
+          // $event = Event::lockForUpdate()->find($this->selectedEvent);
+             $event = Event::find($this->selectedEvent);
+
+            $totalParticipants = 1 + count($this->participants);
+            $currentRegistrations = Registration::where('event_id', $event->id)->count();
+
+            if ($currentRegistrations + $totalParticipants > $event->capacity) {
+                throw new \Exception('Превышен лимит участников на мероприятие.');
+            }
+
+            // Регистрация основного участника
+            Registration::create([
+                'event_id' => $event->id,
+                'name' => $this->name,
+                'email' => $this->email,
+                'phone' => $this->phone,
+            ]);
+
+            // Регистрация дополнительных участников
+            foreach ($this->participants as $p) {
+                Registration::create([
+                    'event_id' => $event->id,
+                    'name' => $p['name'],
+                    'email' => $p['email'],
+                    'phone' => null,
+                ]);
+            }
+       // });
+
+        // 🧹 Очистка кэша списка событий
+        //Cache::forget('events_list');
+
+        session()->flash('success', 'Регистрация прошла успешно!');
+        $this->reset(['selectedEvent', 'name', 'email', 'phone', 'participants']);
+        $this->mount(); // перезагрузить события
+    }
 
     protected function messages()
     {
