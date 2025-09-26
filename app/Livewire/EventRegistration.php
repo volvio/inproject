@@ -81,7 +81,8 @@ class EventRegistration extends Component
 
         if ($currentRegistrations + $totalParticipants > $event->capacity) {
             session()->flash('error', 'Превышен лимит участников на мероприятие.');
-            return;
+            $this->selectedEvent = $event->id;
+            return view('livewire.event-registration');
         }
         DB::beginTransaction();
         // Регистрация основного участника
