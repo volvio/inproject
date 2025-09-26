@@ -80,7 +80,7 @@ class EventRegistration extends Component
         $currentRegistrations = Registration::where('event_id', $event->id)->count();
 
         if ($currentRegistrations + $totalParticipants > $event->capacity) {
-            ession()->flash('error', 'Превышен лимит участников на мероприятие.');
+            session()->flash('error', 'Превышен лимит участников на мероприятие.');
             return;
         }
         DB::beginTransaction();
@@ -105,7 +105,7 @@ class EventRegistration extends Component
             DB::commit(); 
         } catch (\Exception $e) {
             DB::rollBack(); // Откат всех операций при ошибке
-            ession()->flash('error', 'Произошла ошибка: ' . $e->getMessage());
+            session()->flash('error', 'Произошла ошибка: ' . $e->getMessage());
         }
 
         // 🧹 Очистка кэша списка событий
