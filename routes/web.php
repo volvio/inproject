@@ -11,9 +11,9 @@ Route::get('/', function () {
 
 Route::get('/events', function () {
     return view('events.index');
-})->name('events');
-Route::get('/events/register',  function () {
-    return view('events.register');
+})->name('events.list');
+Route::get('/events/register/{event?}',  function ($event = null) {
+    return view('events.register',['event'=>$event]);
 })->name('events.register');
 
 /*Route::get('/events/{event}/register', function ($eventId) {

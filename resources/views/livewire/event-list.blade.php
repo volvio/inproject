@@ -36,7 +36,7 @@
                 <td>{{ $event->date->format('d.m.Y H:i') }}</td>
                 <td>{{ $event->registrations_count }} / {{ $event->capacity }}</td>
                 <td>
-                    <a href="{{ route('events.register', $event->id) }}" class="btn btn-sm btn-success">Регистрация</a>
+                    <a href="{{ route('events.register', ['event' => $event->id]) }}" class="btn btn-sm btn-success">Регистрация</a>
                 </td>
             </tr>
         @empty

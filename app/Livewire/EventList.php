@@ -5,6 +5,7 @@ namespace App\Livewire;
 use App\Models\Event;
 use Livewire\Component;
 use Livewire\WithPagination;
+use Illuminate\Support\Facades\Cache;
 
 class EventList extends Component
 {
@@ -37,15 +38,19 @@ class EventList extends Component
 
     public function render()
     {
-        $query = Event::query()
+        $cacheName = 'events_'.$this->filter.'_'.$this->sortDirection.'_'.($this->search ? md5($this->search): '');
+        $result = Cache::remember($cacheName, 30, function () {
+         $query = Event::query()
             ->when($this->search, fn($q) => $q->where('title', 'like', "%{$this->search}%"))
             ->when($this->filter === 'upcoming', fn($q) => $q->where('date', '>=', now()))
             ->when($this->filter === 'past', fn($q) => $q->where('date', '<', now()))
             ->withCount('registrations')
             ->orderBy('date', $this->sortDirection);
+         return $query->paginate(10);
+        });
 
         return view('livewire.event-list', [
-            'events' => $query->paginate(10),
+            'events' => $result,
         ]);
     }
 }

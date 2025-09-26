@@ -3,6 +3,6 @@
 @section('title', 'Регистрация')
 
 @section('content')
-    <livewire:EventRegistration />
+    <livewire:EventRegistration :event="$event" />
 @endsection
 

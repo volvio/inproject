@@ -6,6 +6,8 @@ use App\Models\Event;
 use App\Models\Registration;
 use Livewire\Component;
 use Livewire\WithPagination;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 
 class EventRegistration extends Component
 {
@@ -17,11 +19,17 @@ class EventRegistration extends Component
     public $email;
     public $phone;
     public $participants = [];
+    private $cacheName = 'events_registration';
     
-    public function mount()
+    public function mount($event = null)
     {
-        // ⚡ Кэшируем список событий (например, на 10 минут)
-        $this->events = Event::orderBy('date', 'asc')->get(['id', 'title', 'capacity', 'date']);
+        $events = Cache::remember($this->cacheName, 30, function () {
+            return   Event::orderBy('date', 'asc')->get(['id', 'title', 'capacity', 'date']);
+        });
+        $this->events = $events;
+        if ($event) {
+            $this->selectedEvent = $event;
+        }
 
     }
     
@@ -65,19 +73,19 @@ class EventRegistration extends Component
      public function submit()
     {
         $this->validate();
+            
+        $event = Event::find($this->selectedEvent);
 
-      //  DB::transaction(function () {
-          // $event = Event::lockForUpdate()->find($this->selectedEvent);
-             $event = Event::find($this->selectedEvent);
+        $totalParticipants = 1 + count($this->participants);
+        $currentRegistrations = Registration::where('event_id', $event->id)->count();
 
-            $totalParticipants = 1 + count($this->participants);
-            $currentRegistrations = Registration::where('event_id', $event->id)->count();
-
-            if ($currentRegistrations + $totalParticipants > $event->capacity) {
-                throw new \Exception('Превышен лимит участников на мероприятие.');
-            }
-
-            // Регистрация основного участника
+        if ($currentRegistrations + $totalParticipants > $event->capacity) {
+            ession()->flash('error', 'Превышен лимит участников на мероприятие.');
+            return;
+        }
+        DB::beginTransaction();
+        // Регистрация основного участника
+        try {
             Registration::create([
                 'event_id' => $event->id,
                 'name' => $this->name,
@@ -94,10 +102,14 @@ class EventRegistration extends Component
                     'phone' => null,
                 ]);
             }
-       // });
+            DB::commit(); 
+        } catch (\Exception $e) {
+            DB::rollBack(); // Откат всех операций при ошибке
+            ession()->flash('error', 'Произошла ошибка: ' . $e->getMessage());
+        }
 
         // 🧹 Очистка кэша списка событий
-        //Cache::forget('events_list');
+       // Cache::forget($this->cacheName);
 
         session()->flash('success', 'Регистрация прошла успешно!');
         $this->reset(['selectedEvent', 'name', 'email', 'phone', 'participants']);
