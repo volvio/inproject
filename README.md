@@ -16,7 +16,7 @@ composer install
 2. Запустить контейнеры Docker через Sail
 ./vendor/bin/sail up -d
 
-3/Сгенерировать ключ приложения
+3. Сгенерировать ключ приложения
 ./vendor/bin/sail artisan key:generate
 
 4. Запустить миграции и сидеры
